@@ -25,6 +25,12 @@ func (g *KiroGateway) forwardHTTP(ctx context.Context, req *sdk.ForwardRequest, 
 		return g.handleCountTokens(req), nil
 	}
 
+	// Web search: when web_search is the sole tool, call Kiro MCP instead of generateAssistantResponse
+	if hasWebSearchTool(req.Body) {
+		logger.Info("detected web_search tool, routing to MCP handler")
+		return g.handleWebSearch(ctx, req, logger)
+	}
+
 	// /v1/messages
 	switch req.Account.Type {
 	case "oauth", "idc":
@@ -54,6 +60,21 @@ func (g *KiroGateway) forwardOAuth(ctx context.Context, req *sdk.ForwardRequest,
 	}
 
 	outcome := g.doForward(ctx, req, logger, start)
+
+	// upstream 401/403 且提示 bearer token 无效 → force-refresh 后重试一次
+	if outcome.Kind == sdk.OutcomeAccountDead && isBearerTokenInvalidResponse(outcome) {
+		logger.Info("bearer token rejected by upstream, force-refreshing")
+		retryCreds, refreshErr := g.tokenMgr.forceRefresh(ctx, req.Account)
+		if refreshErr != nil {
+			logger.Warn("force-refresh after 401/403 failed", "error", refreshErr)
+		} else if req.Account.Credentials["access_token"] != "" {
+			logger.Info("force-refresh succeeded, retrying request")
+			if retryCreds != nil {
+				updatedCreds = retryCreds
+			}
+			outcome = g.doForward(ctx, req, logger, start)
+		}
+	}
 
 	if updatedCreds != nil {
 		outcome.UpdatedCredentials = updatedCreds

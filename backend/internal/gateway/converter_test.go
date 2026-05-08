@@ -59,8 +59,8 @@ func TestBuildThinkingPrefix(t *testing.T) {
 		},
 		{
 			"enabled_capped",
-			`{"thinking":{"type":"enabled","budget_tokens":99999}}`,
-			"<thinking_mode>enabled</thinking_mode><max_thinking_length>24576</max_thinking_length>",
+			`{"thinking":{"type":"enabled","budget_tokens":999999}}`,
+			"<thinking_mode>enabled</thinking_mode><max_thinking_length>102400</max_thinking_length>",
 		},
 		{
 			"adaptive",

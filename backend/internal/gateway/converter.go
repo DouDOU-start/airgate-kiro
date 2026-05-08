@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	maxToolNameLen     = 63
-	truncToolNameLen   = 55
-	maxThinkingBudget  = 24576
+	maxToolNameLen    = 63
+	truncToolNameLen  = 55
+	maxThinkingBudget = 102400
 )
 
 // ConvertContext 贯穿请求生命周期的协议转换上下文。
@@ -227,10 +227,15 @@ func extractSystemPrompt(parsed gjson.Result) string {
 		var sb strings.Builder
 		for _, block := range sys.Array() {
 			if block.Get("type").String() == "text" {
+				text := block.Get("text").String()
+				// 过滤 Claude Code 注入的 billing header
+				if strings.HasPrefix(text, "x-anthropic-billing-header: ") {
+					continue
+				}
 				if sb.Len() > 0 {
 					sb.WriteString("\n")
 				}
-				sb.WriteString(block.Get("text").String())
+				sb.WriteString(text)
 			}
 		}
 		return sb.String()
@@ -310,6 +315,10 @@ func buildUserHistoryMessage(msg gjson.Result, kiroModelID string) map[string]an
 	content := msg.Get("content")
 	textContent, toolResults, images := extractUserContent(content)
 
+	if textContent == "" && len(toolResults) > 0 {
+		textContent = "Here are the tool results."
+	}
+
 	userMsg := map[string]any{
 		"content": textContent,
 		"modelId": kiroModelID,
@@ -344,14 +353,8 @@ func extractUserContent(content gjson.Result) (string, []any, []any) {
 		case "text":
 			textParts = append(textParts, block.Get("text").String())
 		case "image":
-			src := block.Get("source")
-			if src.Exists() {
-				images = append(images, map[string]any{
-					"format": src.Get("media_type").String(),
-					"source": map[string]any{
-						"bytes": src.Get("data").String(),
-					},
-				})
+			if img := convertImageBlock(block); img != nil {
+				images = append(images, img)
 			}
 		case "tool_result":
 			tr := map[string]any{
@@ -367,8 +370,14 @@ func extractUserContent(content gjson.Result) (string, []any, []any) {
 			} else if resultContent.IsArray() {
 				var parts []any
 				for _, c := range resultContent.Array() {
-					if c.Get("type").String() == "text" {
+					switch c.Get("type").String() {
+					case "text":
 						parts = append(parts, map[string]string{"text": c.Get("text").String()})
+					case "image":
+						// Claude Code 截图/读图结果包含 image 块
+						if img := convertImageBlock(c); img != nil {
+							images = append(images, img)
+						}
 					}
 				}
 				if len(parts) > 0 {
@@ -380,6 +389,33 @@ func extractUserContent(content gjson.Result) (string, []any, []any) {
 	}
 
 	return strings.Join(textParts, "\n"), toolResults, images
+}
+
+func convertImageBlock(block gjson.Result) map[string]any {
+	src := block.Get("source")
+	if !src.Exists() {
+		return nil
+	}
+	data := src.Get("data").String()
+	if data == "" {
+		data = src.Get("base64").String()
+	}
+	if data == "" {
+		return nil
+	}
+	mediaType := src.Get("media_type").String()
+	if mediaType == "" {
+		mediaType = src.Get("mime_type").String()
+	}
+	if mediaType == "" {
+		mediaType = "image/png"
+	}
+	return map[string]any{
+		"format": mediaType,
+		"source": map[string]any{
+			"bytes": data,
+		},
+	}
 }
 
 func buildAssistantHistoryMessage(msg gjson.Result) map[string]any {
@@ -405,6 +441,9 @@ func buildAssistantHistoryMessage(msg gjson.Result) map[string]any {
 					"name":      block.Get("name").String(),
 					"input":     json.RawMessage(inputRaw),
 				})
+			case "thinking", "redacted_thinking":
+				// Anthropic extended thinking 产物，Kiro 无此概念，显式跳过
+				continue
 			}
 		}
 	}
@@ -422,6 +461,11 @@ func buildAssistantHistoryMessage(msg gjson.Result) map[string]any {
 func buildCurrentMessage(msg gjson.Result, kiroModelID string, tools []any) map[string]any {
 	content := msg.Get("content")
 	textContent, toolResults, images := extractUserContent(content)
+
+	// Kiro 要求 content 非空；当消息只有 tool_result 没有文本时填充占位符
+	if textContent == "" && len(toolResults) > 0 {
+		textContent = "Here are the tool results."
+	}
 
 	userMsg := map[string]any{
 		"content": textContent,
@@ -453,6 +497,10 @@ func convertTools(tools []gjson.Result) ([]any, map[string]string) {
 	var result []any
 
 	for _, tool := range tools {
+		if isServerTool(tool) {
+			continue
+		}
+
 		name := tool.Get("name").String()
 		desc := tool.Get("description").String()
 		schema := tool.Get("input_schema").Raw
@@ -463,10 +511,8 @@ func convertTools(tools []gjson.Result) ([]any, map[string]string) {
 		// 规范化 schema
 		schema = normalizeSchema(schema)
 
-		actualName := name
-		if len(name) > maxToolNameLen {
-			hash := sha256Hex(name)
-			actualName = name[:truncToolNameLen] + "_" + hash[:7]
+		actualName := shortenToolName(name)
+		if actualName != name {
 			nameMap[actualName] = name
 		}
 
@@ -484,9 +530,29 @@ func convertTools(tools []gjson.Result) ([]any, map[string]string) {
 	return result, nameMap
 }
 
+// shortenToolName 缩短工具名到 maxToolNameLen，MCP 工具优先保留工具名部分。
+func shortenToolName(name string) string {
+	if len(name) <= maxToolNameLen {
+		return name
+	}
+	// MCP 工具格式: mcp__server_name__tool_name
+	// 优先保留 mcp__ 前缀和最后一个 __ 后的工具名
+	if strings.HasPrefix(name, "mcp__") {
+		idx := strings.LastIndex(name, "__")
+		if idx > 4 { // 排除 mcp__ 本身的 __
+			candidate := "mcp__" + name[idx+2:]
+			if len(candidate) <= maxToolNameLen {
+				return candidate
+			}
+		}
+	}
+	// 回退：截断 + hash
+	hash := sha256Hex(name)
+	return name[:truncToolNameLen] + "_" + hash[:7]
+}
+
 func normalizeSchema(schema string) string {
-	var s string
-	s = schema
+	s := schema
 
 	parsed := gjson.Parse(s)
 	if !parsed.Get("type").Exists() || parsed.Get("type").String() == "" {
@@ -497,6 +563,10 @@ func normalizeSchema(schema string) string {
 	}
 	if parsed.Get("required").Type == gjson.Null {
 		s, _ = sjson.Set(s, "required", []any{})
+	}
+	// 剥离 JSON Schema 元字段，避免上游校验失败
+	if parsed.Get("\\$schema").Exists() {
+		s, _ = sjson.Delete(s, "\\$schema")
 	}
 
 	return s

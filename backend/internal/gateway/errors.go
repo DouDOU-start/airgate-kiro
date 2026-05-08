@@ -47,19 +47,34 @@ func isTokenInvalidError(err error) bool {
 
 func isNonRetryableRefreshError(err error) bool {
 	msg := strings.ToLower(err.Error())
+	// kiro.rs: 仅当 invalid_grant + "invalid refresh token" 同时出现才判死
+	if strings.Contains(msg, "invalid_grant") {
+		return strings.Contains(msg, "invalid refresh token")
+	}
 	for _, keyword := range []string{
-		"invalid_grant",
 		"expired_token",
 		"unauthorized_client",
 		"invalid_client",
 		"access_denied",
-		"invalid refresh token",
 	} {
 		if strings.Contains(msg, keyword) {
 			return true
 		}
 	}
 	return false
+}
+
+func isBearerTokenInvalidResponse(outcome sdk.ForwardOutcome) bool {
+	sc := outcome.Upstream.StatusCode
+	if sc != http.StatusUnauthorized && sc != http.StatusForbidden {
+		return false
+	}
+	msg := strings.ToLower(string(outcome.Upstream.Body))
+	return strings.Contains(msg, "bearer token") ||
+		strings.Contains(msg, "token is invalid") ||
+		strings.Contains(msg, "invalid token") ||
+		strings.Contains(msg, "unrecognized client") ||
+		strings.Contains(msg, "the security token included in the request is invalid")
 }
 
 func inferAccountType(credentials map[string]string) string {
