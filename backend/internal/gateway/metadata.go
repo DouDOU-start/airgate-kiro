@@ -2,18 +2,26 @@ package gateway
 
 import sdk "github.com/DouDOU-start/airgate-sdk"
 
+//go:generate go run ../../cmd/genmanifest
+
 var PluginVersion = "1.0.0"
 
 const (
-	PluginID      = "gateway-kiro"
-	PluginName    = "Kiro 网关"
-	PluginPlatform = "kiro"
+	PluginID             = "gateway-kiro"
+	PluginName           = "Kiro 网关"
+	PluginPlatform       = "kiro"
+	PluginMode           = "simple"
+	PluginMinCoreVersion = "1.0.0"
 
 	DefaultKiroVersion = "0.11.107"
 	DefaultNodeVersion = "22.22.0"
 	DefaultRegion      = "us-east-1"
 	DefaultKiroCommit  = ""
 )
+
+func PluginDependencies() []string {
+	return []string{}
+}
 
 func buildPluginInfo() sdk.PluginInfo {
 	return sdk.PluginInfo{

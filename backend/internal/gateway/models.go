@@ -135,11 +135,15 @@ func MapToAnthropicModel(kiroID string) string {
 func allModelInfos() []sdk.ModelInfo {
 	out := make([]sdk.ModelInfo, len(kiroModels))
 	for i, m := range kiroModels {
+		pricing := lookupPricing(m.AnthropicID)
 		out[i] = sdk.ModelInfo{
-			ID:            m.AnthropicID,
-			Name:          m.Name,
-			ContextWindow: m.ContextWindow,
-			MaxOutputTokens: m.MaxOutput,
+			ID:               m.AnthropicID,
+			Name:             m.Name,
+			ContextWindow:    m.ContextWindow,
+			MaxOutputTokens:  m.MaxOutput,
+			InputPrice:       pricing.InputPrice,
+			OutputPrice:      pricing.OutputPrice,
+			CachedInputPrice: pricing.CachedPrice,
 		}
 	}
 	return out

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -563,6 +564,7 @@ func (g *KiroGateway) getUsageCached(ctx context.Context, id int64, credentials 
 func (g *KiroGateway) probeUsage(ctx context.Context, id int64, credentials map[string]string) *sdk.QuotaInfo {
 	accountType := inferAccountType(credentials)
 	account := &sdk.Account{
+		ID:          id,
 		Type:        accountType,
 		Credentials: credentials,
 	}
@@ -602,7 +604,7 @@ func (g *KiroGateway) buildUsageWindows(quota *sdk.QuotaInfo, now time.Time) []s
 
 	usedPercent := (quota.Used / quota.Total) * 100
 
-	label := fmt.Sprintf("%s/%s", formatUsageNumber(quota.Used), formatUsageNumber(quota.Total))
+	label := fmt.Sprintf("Cr %d/%d", int64(math.Round(quota.Used)), int64(math.Round(quota.Total)))
 
 	var resetAt *time.Time
 	if quota.ExpiresAt != "" {
@@ -632,4 +634,16 @@ func formatUsageNumber(n float64) string {
 		return strconv.FormatInt(int64(n), 10)
 	}
 	return strconv.FormatFloat(n, 'f', 2, 64)
+}
+
+func formatUsageCompact(n float64) string {
+	i := int64(math.Round(n))
+	if i >= 1000 {
+		k := float64(i) / 1000
+		if k == float64(int64(k)) {
+			return fmt.Sprintf("%dK", int64(k))
+		}
+		return fmt.Sprintf("%.1fK", k)
+	}
+	return strconv.FormatInt(i, 10)
 }

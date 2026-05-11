@@ -1,3 +1,5 @@
+# 本文件由 backend/cmd/genmanifest 自动生成，请勿手工修改。
+
 id: gateway-kiro
 name: Kiro 网关
 version: 1.0.0
@@ -6,6 +8,26 @@ author: airgate
 type: gateway
 min_core_version: 1.0.0
 dependencies: []
+config:
+  - key: kiro_version
+    label: Kiro IDE 版本号
+    type: string
+    required: false
+    default: 0.11.107
+  - key: node_version
+    label: Node.js 版本标识
+    type: string
+    required: false
+    default: 22.22.0
+  - key: default_region
+    label: 默认 AWS Region
+    type: string
+    required: false
+    default: us-east-1
+  - key: kiro_commit
+    label: Kiro IDE Commit Hash
+    type: string
+    required: false
 frontend_widgets:
   - slot: account-form
     entry_file: index.js
@@ -26,34 +48,46 @@ gateway:
   models:
     - id: claude-sonnet-4-5-20250929
       name: Claude Sonnet 4.5
-      max_tokens: 200000
-      input_price: 0
-      output_price: 0
-      cache_price: 0
+      context_window: 200000
+      max_output_tokens: 64000
+      input_price: 3
+      output_price: 15
+      cached_input_price: 0.3
     - id: claude-sonnet-4-6
       name: Claude Sonnet 4.6
-      max_tokens: 1000000
-      input_price: 0
-      output_price: 0
-      cache_price: 0
+      context_window: 1000000
+      max_output_tokens: 64000
+      input_price: 3
+      output_price: 15
+      cached_input_price: 0.3
     - id: claude-opus-4-5-20251101
       name: Claude Opus 4.5
-      max_tokens: 200000
-      input_price: 0
-      output_price: 0
-      cache_price: 0
+      context_window: 200000
+      max_output_tokens: 64000
+      input_price: 5
+      output_price: 25
+      cached_input_price: 0.5
     - id: claude-opus-4-6
       name: Claude Opus 4.6
-      max_tokens: 1000000
-      input_price: 0
-      output_price: 0
-      cache_price: 0
+      context_window: 1000000
+      max_output_tokens: 128000
+      input_price: 5
+      output_price: 25
+      cached_input_price: 0.5
+    - id: claude-opus-4-7
+      name: Claude Opus 4.7
+      context_window: 1000000
+      max_output_tokens: 128000
+      input_price: 5
+      output_price: 25
+      cached_input_price: 0.5
     - id: claude-haiku-4-5-20251001
       name: Claude Haiku 4.5
-      max_tokens: 200000
-      input_price: 0
-      output_price: 0
-      cache_price: 0
+      context_window: 200000
+      max_output_tokens: 64000
+      input_price: 1
+      output_price: 5
+      cached_input_price: 0.1
   account_types:
     - key: oauth
       label: OAuth
@@ -95,16 +129,17 @@ gateway:
           required: false
           placeholder: us-east-1
         - key: machine_id
-          label: Machine ID
+          label: Machine ID (64位hex)
           type: text
           required: false
         - key: proxy_url
           label: 代理地址
           type: text
           required: false
+          placeholder: http:// 或 socks5://
     - key: api_key
       label: Kiro API Key
-      description: 使用 Kiro API Key 直接访问
+      description: 使用 Kiro API Key (ksk_...) 直接访问
       fields:
         - key: kiro_api_key
           label: Kiro API Key
