@@ -21,7 +21,8 @@ func classifyHTTPFailure(statusCode int, message string) sdk.OutcomeKind {
 	case statusCode == http.StatusUnauthorized || statusCode == http.StatusForbidden:
 		return sdk.OutcomeAccountDead
 	case statusCode == http.StatusPaymentRequired && strings.Contains(message, "MONTHLY_REQUEST_COUNT"):
-		return sdk.OutcomeAccountDead
+		// Kiro 允许超刷，402 只是提示性的，不影响后续请求，走 failover 即可。
+		return sdk.OutcomeUpstreamTransient
 	case statusCode == http.StatusBadRequest && containsAccountDisabledKeyword(message):
 		return sdk.OutcomeAccountDead
 	case statusCode >= 500:
