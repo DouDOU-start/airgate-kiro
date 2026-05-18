@@ -204,7 +204,7 @@ func (g *KiroGateway) queryUsageLimits(ctx context.Context, account *sdk.Account
 	if err != nil {
 		return nil, fmt.Errorf("usage limits request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
@@ -723,17 +723,6 @@ func formatUsageNumber(n float64) string {
 	return strconv.FormatFloat(n, 'f', 2, 64)
 }
 
-func formatUsageCompact(n float64) string {
-	i := int64(math.Round(n))
-	if i >= 1000 {
-		k := float64(i) / 1000
-		if k == float64(int64(k)) {
-			return fmt.Sprintf("%dK", int64(k))
-		}
-		return fmt.Sprintf("%.1fK", k)
-	}
-	return strconv.FormatInt(i, 10)
-}
 
 func cloneStringMap(input map[string]string) map[string]string {
 	cloned := make(map[string]string, len(input))
