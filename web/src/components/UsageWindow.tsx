@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import type { AccountSurfaceProps } from '@doudou-start/airgate-theme/plugin';
 
 interface UsageWindowItem {
@@ -5,6 +6,7 @@ interface UsageWindowItem {
   label: string;
   used_percent: number;
   reset_seconds: number;
+  reset_at?: string;
 }
 
 function getUsageWindows(context: AccountSurfaceProps['context']): UsageWindowItem[] {
@@ -29,6 +31,26 @@ function formatReset(seconds: number) {
   return `${m}m`;
 }
 
+function useResetTick(enabled: boolean) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!enabled) return undefined;
+    const timer = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, [enabled]);
+
+  return now;
+}
+
+function resolveResetSeconds(w: UsageWindowItem, now: number) {
+  if (w.reset_at) {
+    const delta = Date.parse(w.reset_at) - now;
+    if (Number.isFinite(delta)) return Math.max(0, Math.floor(delta / 1000));
+  }
+  return w.reset_seconds;
+}
+
 function usageColor(pct: number) {
   if (pct < 50) return 'var(--ag-success)';
   if (pct < 80) return 'var(--ag-warning)';
@@ -37,6 +59,7 @@ function usageColor(pct: number) {
 
 export function UsageWindow({ context }: AccountSurfaceProps) {
   const windows = getUsageWindows(context);
+  const resetNow = useResetTick(windows.length > 0);
   if (windows.length === 0) return null;
 
   return (
@@ -45,7 +68,7 @@ export function UsageWindow({ context }: AccountSurfaceProps) {
         const percent = Math.round(w.used_percent);
         const barPercent = Math.max(0, Math.min(100, percent));
         const color = usageColor(w.used_percent);
-        const resetText = formatReset(w.reset_seconds);
+        const resetText = formatReset(resolveResetSeconds(w, resetNow));
         return (
           <div key={w.key || w.label} style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem', minWidth: 0 }}>
             <span style={{ fontSize: '0.625rem', fontWeight: 600, lineHeight: 1, color: 'var(--ag-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
