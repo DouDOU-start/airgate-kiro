@@ -44,6 +44,14 @@ func buildPluginInfo() sdk.PluginInfo {
 			{Key: "kiro_commit", Label: "Kiro IDE Commit Hash", Type: "string", Default: DefaultKiroCommit},
 			{Key: "ignore_usage_limit", Label: "无视用量限流", Type: "bool", Default: "false", Description: "开启后用量达到或超过 100% 时仍继续参与调度；用量窗口仍展示真实百分比。"},
 		},
+		Metadata: map[string]string{
+			"account.oauth_plans": `[
+				{"key":"free","label":"Free","credential_key":"plan_type","match":"contains","matches":["Free"]},
+				{"key":"pro","label":"Pro","credential_key":"plan_type","match":"contains","matches":["Pro"]},
+				{"key":"pro_plus","label":"Pro+","credential_key":"plan_type","match":"contains","matches":["Pro+","Pro Plus"]},
+				{"key":"power","label":"Power","credential_key":"plan_type","match":"contains","matches":["Power"]}
+			]`,
+		},
 		AccountTypes: []sdk.AccountType{
 			{
 				Key:         "oauth",
