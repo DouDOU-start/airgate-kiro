@@ -11,8 +11,8 @@ func TestFindThinkingStartTag(t *testing.T) {
 	}{
 		{"<thinking>hello", 0},
 		{"some text<thinking>hello", 9},
-		{"`<thinking>`", -1},        // 反引号包裹
-		{"\"<thinking>\"", -1},       // 双引号包裹
+		{"`<thinking>`", -1},   // 反引号包裹
+		{"\"<thinking>\"", -1}, // 双引号包裹
 		{"no tag here", -1},
 	}
 
@@ -30,10 +30,10 @@ func TestFindThinkingEndTag(t *testing.T) {
 		want  int
 	}{
 		{"end here</thinking>\n\nmore", 8},
-		{"`</thinking>`", -1},                // 反引号
-		{"about </thinking> tag", -1},         // 后面不是 \n\n
-		{"</thinking>", 0},                    // 缓冲区末尾
-		{"</thinking>  ", 0},                  // 末尾空白
+		{"`</thinking>`", -1},         // 反引号
+		{"about </thinking> tag", -1}, // 后面不是 \n\n
+		{"</thinking>", 0},            // 缓冲区末尾
+		{"</thinking>  ", 0},          // 末尾空白
 	}
 
 	for _, tt := range tests {

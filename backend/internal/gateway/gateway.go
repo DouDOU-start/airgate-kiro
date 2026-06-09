@@ -723,7 +723,6 @@ func formatUsageNumber(n float64) string {
 	return strconv.FormatFloat(n, 'f', 2, 64)
 }
 
-
 func cloneStringMap(input map[string]string) map[string]string {
 	cloned := make(map[string]string, len(input))
 	for key, value := range input {

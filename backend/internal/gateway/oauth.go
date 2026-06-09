@@ -22,8 +22,8 @@ const (
 	kiroSignInURL        = "https://app.kiro.dev/signin"
 	kiroTokenExchangeURL = "https://prod.us-east-1.auth.desktop.kiro.dev/oauth/token"
 	kiroCallbackBaseURL  = "http://localhost:3128"
-	idcCallbackBaseURL = "http://127.0.0.1:3128"
-	idcClientName   = "airgate-kiro"
+	idcCallbackBaseURL   = "http://127.0.0.1:3128"
+	idcClientName        = "airgate-kiro"
 
 	oauthSessionTTL = 30 * time.Minute
 )
@@ -141,10 +141,10 @@ type ExchangeCallbackResponse struct {
 	Credentials map[string]string `json:"credentials,omitempty"`
 	Email       string            `json:"email,omitempty"`
 	// BuilderID 设备授权续接
-	Continuation        bool   `json:"-"`
-	VerificationURI     string `json:"-"`
-	UserCode            string `json:"-"`
-	DeviceSessionID     string `json:"-"`
+	Continuation    bool   `json:"-"`
+	VerificationURI string `json:"-"`
+	UserCode        string `json:"-"`
+	DeviceSessionID string `json:"-"`
 }
 
 // generateAuthURL 生成 Kiro OAuth 授权链接。

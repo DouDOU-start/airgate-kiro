@@ -12,8 +12,9 @@ import (
 	"sync"
 	"time"
 
-	sdk "github.com/DouDOU-start/airgate-sdk/sdkgo"
 	"github.com/google/uuid"
+
+	sdk "github.com/DouDOU-start/airgate-sdk/sdkgo"
 )
 
 const (

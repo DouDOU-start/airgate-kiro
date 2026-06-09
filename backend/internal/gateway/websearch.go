@@ -12,9 +12,10 @@ import (
 	"strings"
 	"time"
 
-	sdk "github.com/DouDOU-start/airgate-sdk/sdkgo"
 	"github.com/google/uuid"
 	"github.com/tidwall/gjson"
+
+	sdk "github.com/DouDOU-start/airgate-sdk/sdkgo"
 )
 
 const webSearchQueryPrefix = "Perform a web search for the query: "

@@ -10,8 +10,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	sdk "github.com/DouDOU-start/airgate-sdk/sdkgo"
 	"github.com/google/uuid"
+
+	sdk "github.com/DouDOU-start/airgate-sdk/sdkgo"
 )
 
 // SSEConverter 将 Kiro EventStream 事件转换为 Anthropic SSE 格式。

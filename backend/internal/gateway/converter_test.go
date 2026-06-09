@@ -6,8 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	sdk "github.com/DouDOU-start/airgate-sdk/sdkgo"
 	"github.com/tidwall/gjson"
+
+	sdk "github.com/DouDOU-start/airgate-sdk/sdkgo"
 )
 
 func TestMapToKiroModel(t *testing.T) {

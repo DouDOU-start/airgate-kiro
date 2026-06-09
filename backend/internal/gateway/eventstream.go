@@ -10,11 +10,11 @@ import (
 )
 
 const (
-	preludeLen       = 12 // totalLen(4) + headerLen(4) + preludeCRC(4)
-	messageCRCLen    = 4
-	minMessageLen    = 16 // prelude(12) + messageCRC(4)
-	maxMessageLen    = 16 * 1024 * 1024
-	maxConsecErrors  = 5
+	preludeLen      = 12 // totalLen(4) + headerLen(4) + preludeCRC(4)
+	messageCRCLen   = 4
+	minMessageLen   = 16 // prelude(12) + messageCRC(4)
+	maxMessageLen   = 16 * 1024 * 1024
+	maxConsecErrors = 5
 
 	headerTypeString = 7
 )
