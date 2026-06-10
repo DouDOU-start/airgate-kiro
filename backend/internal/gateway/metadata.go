@@ -44,6 +44,8 @@ func buildPluginInfo() sdk.PluginInfo {
 			{Key: "kiro_commit", Label: "Kiro IDE Commit Hash", Type: "string", Default: DefaultKiroCommit},
 		},
 		Metadata: map[string]string{
+			// 对外协议为 Anthropic Messages API：Core 写错误按 Anthropic 形态
+			"error_format": "anthropic",
 			"account.oauth_plans": `[
 				{"key":"free","label":"Free","credential_key":"plan_type","match":"contains","matches":["Free"]},
 				{"key":"pro","label":"Pro","credential_key":"plan_type","match":"contains","matches":["Pro"]},
